@@ -54,6 +54,7 @@ propex:mono
 		lv2:index 0;
 		lv2:symbol "control";
 		lv2:name "Control Input";
+		lv2:designation lv2:control ;
 	] , [
 		a lv2:AudioPort ,
 			lv2:InputPort ;
