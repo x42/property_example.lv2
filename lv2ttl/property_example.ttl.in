@@ -1,0 +1,70 @@
+@prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix foaf:  <http://xmlns.com/foaf/0.1/> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
+@prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
+
+@prefix propex: <http://gareus.org/oss/lv2/@LV2NAME@#> .
+
+<http://gareus.org/rgareus#me>
+	a foaf:Person;
+	foaf:name "Robin Gareus";
+	foaf:mbox <mailto:robin@gareus.org>;
+	foaf:homepage <http://gareus.org/> .
+
+propex:polarity
+	a lv2:Parameter ;
+	rdfs:label "Polarity" ;
+	rdfs:comment "Invert polarity of the input signal" ;
+	rdfs:range atom:Bool ;
+	lv2:default 0 .
+
+propex:gain
+	a lv2:Parameter ;
+	rdfs:label "Gain" ;
+	rdfs:comment "Signal gain in dB" ;
+	rdfs:range atom:Float ;
+	units:unit units:db ;
+	lv2:minimum -20 ;
+	lv2:maximum 20 ;
+	lv2:default 0 .
+
+propex:mono
+	a lv2:Plugin, doap:Project, lv2:UtilityPlugin;
+	doap:license <http://usefulinc.com/doap/licenses/gpl>;
+	doap:maintainer <http://gareus.org/rgareus#me>;
+	doap:name "Property Example Amp";
+	@VERSION@
+	lv2:optionalFeature lv2:hardRTCapable;
+	lv2:requiredFeature urid:map;
+	rdfs:comment "Demonstrate use of LV2 Parameter Properties";
+
+	patch:writable propex:polarity;
+	patch:writable propex:gain;
+
+	lv2:port [
+		a atom:AtomPort, lv2:InputPort;
+		atom:bufferType atom:Sequence;
+		atom:supports atom:Object ;
+		atom:supports patch:Message ;
+		lv2:index 0;
+		lv2:symbol "control";
+		lv2:name "Control Input";
+	] , [
+		a lv2:AudioPort ,
+			lv2:InputPort ;
+		lv2:index 1 ;
+		lv2:symbol "in" ;
+		lv2:name "In"
+	] , [
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 2 ;
+		lv2:symbol "out" ;
+		lv2:name "Out"
+	]
+	.
