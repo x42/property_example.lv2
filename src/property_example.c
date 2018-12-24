@@ -171,6 +171,16 @@ parse_property (PropEx* self, const LV2_Atom_Object* obj)
 		return NULL;
 	}
 
+	/* NOTE: This code errs towards the verbose side
+	 *  - the type is usually implicit and does not need to be checked.
+	 *  - consololidat code e.g.
+	 *
+	 *    const LV2_URID urid = (LV2_Atom_URID*)property)->body
+	 *    PropExURIs* urid    = self->uris;
+	 *
+	 *  - no need to lv2_log  warnings or errors
+	 */
+
 	if (((LV2_Atom_URID*)property)->body == self->uris.m_param_gain) {
 		if (val->type != self->uris.atom_Float) {
 			lv2_log_error (&self->logger, "PropEx.lv2: Invalid property type, expected 'float'.\n");
@@ -203,15 +213,14 @@ run (LV2_Handle instance, uint32_t n_samples)
 	}
 
 	/* process control events */
-	LV2_Atom_Event* ev = lv2_atom_sequence_begin (&(self->control)->body);
-	while (!lv2_atom_sequence_is_end (&(self->control)->body, (self->control)->atom.size, ev)) {
-		if (ev->body.type == self->uris.atom_Object) {
-			const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
-			if (obj->body.otype == self->uris.patch_Set) {
-				parse_property (self, obj);
-			}
+	LV2_ATOM_SEQUENCE_FOREACH (self->control, ev) {
+		if (ev->body.type != self->uris.atom_Object) {
+			continue;
 		}
-		ev = lv2_atom_sequence_next (ev);
+		const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
+		if (obj->body.otype == self->uris.patch_Set) {
+			parse_property (self, obj);
+		}
 	}
 
 	/* localize variables */
