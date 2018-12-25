@@ -64,11 +64,6 @@ typedef struct {
 	LV2_Log_Logger logger;
 } PropEx;
 
-/* *****************************************************************************
- * helper functions
- */
-
-/** map uris */
 static void
 map_uris (LV2_URID_Map* map, PropExURIs* uris)
 {
@@ -83,10 +78,6 @@ map_uris (LV2_URID_Map* map, PropExURIs* uris)
 	uris->m_param_gain     = map->map (map->handle, PROPEX_URI "gain");
 	uris->m_param_polarity = map->map (map->handle, PROPEX_URI "polarity");
 }
-
-/* *****************************************************************************
- * LV2 Plugin
- */
 
 static LV2_Handle
 instantiate (const LV2_Descriptor*     descriptor,
@@ -153,7 +144,12 @@ parse_property (PropEx* self, const LV2_Atom_Object* obj)
 	const LV2_Atom* property = NULL;
 	lv2_atom_object_get (obj, self->uris.patch_property, &property, 0);
 
-	/* Get property URI */
+	/* Get property URI.
+	 *
+	 * Note: Real world code would only call
+	 *  if (!property || property->type != self->uris.atom_URID) { return; }
+	 * However this is example and test code, so..
+	 */
 	if (!property) {
 		lv2_log_error (&self->logger, "PropEx.lv2: Malformed set message has no body.\n");
 		return false;
@@ -167,17 +163,17 @@ parse_property (PropEx* self, const LV2_Atom_Object* obj)
 	lv2_atom_object_get (obj, self->uris.patch_value, &val, 0);
 	if (!val) {
 		lv2_log_error (&self->logger, "PropEx.lv2: Malformed set message has no value.\n");
-		return NULL;
+		return false;
 	}
 
 	/* NOTE: This code errs towards the verbose side
 	 *  - the type is usually implicit and does not need to be checked.
-	 *  - consololidat code e.g.
+	 *  - consolidate code e.g.
 	 *
 	 *    const LV2_URID urid = (LV2_Atom_URID*)property)->body
 	 *    PropExURIs* urid    = self->uris;
 	 *
-	 *  - no need to lv2_log  warnings or errors
+	 *  - no need to lv2_log warnings or errors
 	 */
 
 	if (((LV2_Atom_URID*)property)->body == self->uris.m_param_gain) {
@@ -187,7 +183,7 @@ parse_property (PropEx* self, const LV2_Atom_Object* obj)
 		}
 		float f = *((float*)(val + 1));
 		lv2_log_note (&self->logger, "PropEx.lv2: Received gain = %f\n", f);
-		self->target_gain = powf (10.f, .05f * f);
+		self->target_gain = powf (10.f, .05f * f); // dB to coeff
 	} else if (((LV2_Atom_URID*)property)->body == self->uris.m_param_polarity) {
 		if (val->type != self->uris.atom_Bool) {
 			lv2_log_error (&self->logger, "PropEx.lv2: Invalid property type, expected 'bool'.\n");
