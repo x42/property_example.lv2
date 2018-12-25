@@ -1,8 +1,8 @@
 LV2 Parameter/Property Example
 ==============================
 
-A basic [LV2](http://lv2plug.in) plugin show how to use LV2 parameter
-properties as control values.
+This simple [LV2](http://lv2plug.in) plugin is provided as example
+to show how to use LV2 parameter properties as control values.
 
 This plugin is a simple dezippered amplifier that exposes two parameters
 as properties: a float (gain in dB) and a boolean (polarity invert).
