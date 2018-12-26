@@ -138,7 +138,7 @@ connect_port (LV2_Handle instance,
 	}
 }
 
-static bool
+static inline bool
 parse_property (PropEx* self, const LV2_Atom_Object* obj)
 {
 	const LV2_Atom* property = NULL;
@@ -199,41 +199,11 @@ parse_property (PropEx* self, const LV2_Atom_Object* obj)
 	return true;
 }
 
-static void
-run (LV2_Handle instance, uint32_t n_samples)
+static inline uint32_t
+process (PropEx* self, uint32_t from, uint32_t until)
 {
-	PropEx* self = (PropEx*)instance;
-	if (!self->control) {
-		return;
-	}
-
-	/* process control events */
-	LV2_ATOM_SEQUENCE_FOREACH (self->control, ev) {
-		if (ev->body.type != self->uris.atom_Object) {
-			continue;
-		}
-		const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
-		if (obj->body.otype == self->uris.patch_Set) {
-			/* NOTE, events are timestamped. There could be more than
-			 * one value for the same parameter in the same cycle.
-			 *
-			 * ev->time.frames is the sample offset in current cycle:
-			 *
-			 *    0 <= ev->time.frames < n_samples
-			 *
-			 * In this example we ignore the timestamp, in
-			 * particular since no host currently supports
-			 * timestamped automation.
-			 *  - Ardour always uses (n_samples - 1).
-			 *  - jalv uses (n_samples) -- incorrectly.
-			 */
-			parse_property (self, obj);
-
-			/* Eventually we should process audio from 0 until
-			 * ev->time.frames, then apply the parameter change and
-			 * process audio until the next event or end of cycle.
-			 */
-		}
+	if (from == until) {
+		return from;
 	}
 
 	/* localize variables */
@@ -245,26 +215,69 @@ run (LV2_Handle instance, uint32_t n_samples)
 
 	if (fabsf (gain - target) < 0.01) {
 		/* constant gain factor */
-		for (uint32_t i = 0; i < n_samples; ++i) {
+		for (uint32_t i = from; i < until; ++i) {
 			out[i] = in[i] * target;
 		}
 		self->gain = target;
-		return;
+		return until;
 	}
 
 	/* low pass filter gain-coefficient */
 	const float lpf    = self->lpf;
-	uint32_t    remain = n_samples;
 
-	while (remain > 0) {
+	while (from < until) {
+		uint32_t remain = until - from;
 		uint32_t n_proc = remain > 16 ? 16 : remain;
 		gain += lpf * (target - gain);
-		for (uint32_t i = 0; i < n_proc; ++i) {
-			*out++ = *in++ * gain;
+		for (uint32_t i = from; i < from + n_proc; ++i) {
+			out[i] = in[i] * gain;
 		}
-		remain -= n_proc;
+		from += n_proc;
 	}
 	self->gain = gain;
+
+	return from;
+}
+
+static void
+run (LV2_Handle instance, uint32_t n_samples)
+{
+	PropEx* self = (PropEx*)instance;
+	if (!self->control) {
+		return;
+	}
+
+	uint32_t written = 0;
+
+	/* process control events */
+	LV2_ATOM_SEQUENCE_FOREACH (self->control, ev) {
+		if (ev->body.type != self->uris.atom_Object) {
+			continue;
+		}
+		const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
+		if (obj->body.otype == self->uris.patch_Set) {
+			/* Events are timestamped. There can be more than one
+			 * value-change of a given parameter in the same cycle.
+			 *
+			 * ev->time.frames is the sample offset in current cycle:
+			 *    0 <= ev->time.frames < n_samples
+			 *
+			 * Process audio until the parameter-change:
+			 */
+#if 1 // XXX Note that host support for this is lacking (!)
+			/* Currently (Dec 2018)
+			 * - Ardour always uses   ev->time.frames = (n_samples - 1)
+			 * - jalv sets            ev->time.frames = n_samples
+			 * So you may want to disable this for the time being.
+			 */
+			written = process (self, written, ev->time.frames);
+#endif
+			/* then apply the change and continue */
+			parse_property (self, obj);
+		}
+	}
+	/* finally process any audio until the end of the cycle */
+	process (self, written, n_samples);
 }
 
 static void
