@@ -214,7 +214,25 @@ run (LV2_Handle instance, uint32_t n_samples)
 		}
 		const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 		if (obj->body.otype == self->uris.patch_Set) {
+			/* NOTE, events are timestamped. There could be more than
+			 * one value for the same parameter in the same cycle.
+			 *
+			 * ev->time.frames is the sample offset in current cycle:
+			 *
+			 *    0 <= ev->time.frames < n_samples
+			 *
+			 * In this example we ignore the timestamp, in
+			 * particular since no host currently supports
+			 * timestamped automation.
+			 *  - Ardour always uses (n_samples - 1).
+			 *  - jalv uses (n_samples) -- incorrectly.
+			 */
 			parse_property (self, obj);
+
+			/* Eventually we should process audio from 0 until
+			 * ev->time.frames, then apply the parameter change and
+			 * process audio until the next event or end of cycle.
+			 */
 		}
 	}
 
