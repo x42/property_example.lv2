@@ -29,9 +29,9 @@ propex:gain
 	rdfs:comment "Signal gain in dB" ;
 	rdfs:range atom:Float ;
 	units:unit units:db ;
-	lv2:minimum -20 ;
-	lv2:maximum 20 ;
-	lv2:default 0 .
+	lv2:minimum -20.0 ;
+	lv2:maximum 20.0 ;
+	lv2:default 0.0 .
 
 propex:mono
 	a lv2:Plugin, doap:Project, lv2:UtilityPlugin;
