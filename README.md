@@ -12,9 +12,9 @@ using a single LV2 Atom control port.
 
 See also
 
-* http://lv2plug.in/ns/lv2core/lv2core.html#Parameter
-* http://lv2plug.in/ns/ext/patch/#Set
-* http://lv2plug.in/ns/ext/patch/#writable
+* http://lv2plug.in/ns/lv2core#Parameter
+* http://lv2plug.in/ns/ext/patch#Set
+* http://lv2plug.in/ns/ext/patch#writable
 
 Build and Install
 -----------------
