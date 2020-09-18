@@ -53,7 +53,7 @@ ifeq ($(shell pkg-config --exists lv2 || echo no), no)
   $(error "LV2 SDK was not found")
 endif
 
-override CFLAGS += `pkg-config --cflags lv2`
+override CFLAGS += `pkg-config --cflags lv2` -std=c99
 
 # build target definitions
 default: all
